@@ -78,8 +78,124 @@ let getAllUsers = async (userId) => {
   })
 }
 
+const salt = bcrypt.genSaltSync(10)
+let hashUserPassword = (password) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let hashPassword = await bcrypt.hashSync(password, salt)
+      resolve(hashPassword)
+    } catch (error) {
+      reject(error)
+    }
+  })
+}
+
+let createNewUser = (data) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      //check email is exist ???
+      let check = await checkUserEmail(data.email)
+      if (check === true) {
+        return resolve({
+          errCode: 1,
+          message: "Your email is already in use, Plz try another email!",
+        })
+      }
+      let hashPasswordFromBcrypt = await hashUserPassword(data.password)
+      await db.User.create({
+        email: data.email,
+        password: hashPasswordFromBcrypt,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        address: data.address,
+        gender: data.gender === "1" ? true : false,
+        phoneNumber: data.phoneNumber,
+        roleId: data.roleId,
+      })
+
+      resolve({
+        errCode: 0,
+        message: "OK",
+      })
+    } catch (error) {
+      reject(error)
+    }
+  })
+}
+
+let getUserInfoById = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let user = await db.User.findOne({ where: { id: userId }, raw: false })
+      if (user) {
+        resolve(user)
+      } else {
+        resolve({})
+      }
+    } catch (error) {
+      reject(error)
+    }
+  })
+}
+
+let deleteUser = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let user = await getUserInfoById(userId)
+      if (!user) {
+        return resolve({
+          errCode: 2,
+          errMessage: "The user is not exist",
+        })
+      }
+      await user.destroy()
+      resolve({ errCode: 0, message: "User deleted." })
+    } catch (error) {
+      reject(error)
+    }
+  })
+}
+
+let updateUserData = (data) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (!data.id) {
+        resolve({
+          errCode: 2,
+          errMessage: "Missing required parameters",
+        })
+      }
+      let user = await getUserInfoById(data.id)
+      if (user) {
+        user.firstName = data.firstName
+        user.lastName = data.lastName
+        user.address = data.address
+        user.email = data.email
+
+        await user.save()
+
+        return resolve({
+          errCode: 0,
+          errMessage: "Update the user succeeds",
+        })
+      } else {
+        resolve({
+          errCode: 1,
+          errMessage: "User's not found",
+        })
+      }
+    } catch (error) {
+      reject(error)
+    }
+  })
+}
+
 module.exports = {
   handleUserLogin,
   checkUserEmail,
   getAllUsers,
+  createNewUser,
+  getUserInfoById,
+  deleteUser,
+  updateUserData,
 }
