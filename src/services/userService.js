@@ -11,7 +11,7 @@ let handleUserLogin = (email, password) => {
         // //User already exist
         let user = await db.User.findOne({
           where: { email: email },
-          // attributes: ["email", "roleId", "password"],
+          attributes: ["email", "roleId", "password", "firstName", "lastName"],
           raw: true, //lay y nguyen object trong db
         })
         if (user) {
@@ -164,6 +164,7 @@ let updateUserData = (data) => {
         resolve({
           errCode: 2,
           errMessage: "Missing required parameters",
+          data,
         })
       }
       let user = await getUserInfoById(data.id)
@@ -191,6 +192,27 @@ let updateUserData = (data) => {
   })
 }
 
+let getAllCodeService = (typeInput) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let res = {}
+
+      if (!typeInput) {
+        res.errCode = 1
+        res.errMessage = "Missing required parameters"
+        resolve(res)
+      } else {
+        let allcode = await db.Allcode.findAll({ where: { type: typeInput } })
+        res.errCode = 0
+        res.data = allcode
+        resolve(res)
+      }
+    } catch (error) {
+      reject(error)
+    }
+  })
+}
+
 module.exports = {
   handleUserLogin,
   checkUserEmail,
@@ -199,4 +221,5 @@ module.exports = {
   getUserInfoById,
   deleteUser,
   updateUserData,
+  getAllCodeService,
 }
